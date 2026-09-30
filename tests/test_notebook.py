@@ -47,3 +47,13 @@ def test_inlined_modules_define_a_working_pipeline(tmp_path):
     assert callable(ns["run"])
     assert ns["TrainConfig"]().model == "gru"
     assert ns["N_FEATURES"] == 132
+
+
+def test_title_resolves_to_kernel_slug():
+    # Kaggle derives the URL from the title; a mismatch creates a new kernel on push.
+    from build_notebook import TITLE
+    import re
+
+    slug = re.sub(r"[^a-z0-9]+", "-", TITLE.lower()).strip("-")
+
+    assert slug == KERNEL_SLUG

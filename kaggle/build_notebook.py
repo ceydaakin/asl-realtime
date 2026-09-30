@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "asl_realtime"
 MODULE_ORDER = ["landmarks", "data", "features", "models", "metrics", "train"]
 DATASET = "markwijkhuizen/gislr-dataset-public"
-KERNEL_SLUG = "asl-realtime-baselines"
+KERNEL_SLUG = "asl-realtime-landmark-baselines"
 TITLE = "ASL Realtime - Landmark Baselines"
 
 INTRO = f"""# {TITLE}
