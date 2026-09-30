@@ -31,22 +31,27 @@ inlined below. Data: [`{DATASET}`](https://www.kaggle.com/datasets/{DATASET}).""
 FIND_DATA = """from pathlib import Path
 
 DATA_ROOT = next(Path("/kaggle/input").rglob("X_train.npy")).parent
-EPOCHS = 30
 print(DATA_ROOT)"""
 
-RUN = """results = {}
-for name in ["conv1d", "gru"]:
+RUN = """# name -> TrainConfig overrides
+EXPERIMENTS = {
+    "conv1d_seq_aug": dict(model="conv1d", norm="sequence", augment=True, epochs=60),
+    "gru_seq_aug": dict(model="gru", norm="sequence", augment=True, epochs=60),
+}
+
+results = {}
+for name, overrides in EXPERIMENTS.items():
     print(f"=== {name}")
-    results[name] = run(TrainConfig(model=name, data_root=str(DATA_ROOT),
-                                    out_dir=f"/kaggle/working/runs/{name}", epochs=EPOCHS))"""
+    results[name] = run(TrainConfig(data_root=str(DATA_ROOT), out_dir=f"/kaggle/working/runs/{name}", **overrides))"""
 
 SUMMARY = """import pandas as pd
 
 pd.DataFrame([
-    {"model": m, "params": r["params"], "val_top1": r["val_top1"],
-     "val_top5": r["val_top5"], "best_epoch": r["best_epoch"]}
-    for m, r in results.items()
-]).set_index("model").round(4)"""
+    {"experiment": name, "params": r["params"], "norm": r["norm"], "augment": r["augment"],
+     "val_top1": r["val_top1"], "val_top5": r["val_top5"], "last_val_top1": r["last_val_top1"],
+     "best_epoch": r["best_epoch"]}
+    for name, r in results.items()
+]).set_index("experiment").round(4)"""
 
 _RELATIVE_IMPORT = re.compile(r"^from \.\w* import .*$\n", re.MULTILINE)
 
