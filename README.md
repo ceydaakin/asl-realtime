@@ -2,7 +2,7 @@
 
 Real-time American Sign Language recognition from hand and pose landmarks with a temporal transformer. The model runs on-device on a phone.
 
-> **Status:** Early development. The data pipeline and baselines are done (69.9% top-1 on unseen signers). A stronger model and the mobile export come next.
+> **Status:** Early development. The data pipeline, baselines and augmentation are done (71.7% top-1 on unseen signers). A stronger model and the mobile export come next.
 
 ## Goal
 
@@ -56,26 +56,35 @@ pytest
 
 ## Results
 
-Validation on **held-out participants**. There are 250 classes, so chance is 0.4%. 30 epochs, x/y landmarks only, no augmentation.
+Validation on **held-out participants**. There are 250 classes, so chance is 0.4%. x/y landmarks only.
 
-| Model | Params | Top-1 | Top-5 | Top-1 (last epoch) | s / epoch (M4 Pro MPS) |
-|---|---|---|---|---|---|
-| Conv1D (6 depthwise-separable blocks) | 0.51 M | **69.9%** | 90.4% | 69.8% | 20 |
-| GRU (2 layers, unidirectional) | 0.89 M | 68.4% | 90.3% | 68.4% | 24 |
+| Model | Norm | Augment | Epochs | Params | Top-1 | Top-5 | Top-1 (last epoch) | Where |
+|---|---|---|---|---|---|---|---|---|
+| Conv1D | global | – | 30 | 0.51 M | 69.9% | 90.4% | 69.8% | M4 Pro |
+| GRU | global | – | 30 | 0.89 M | 68.4% | 90.3% | 68.4% | M4 Pro |
+| Conv1D | sequence | – | 30 | 0.51 M | 70.9% | 90.6% | 70.8% | M4 Pro |
+| Conv1D | global | ✓ | 60 | 0.51 M | 71.9% | 91.5% | 71.9% | M4 Pro |
+| **Conv1D** | **sequence** | ✓ | 60 | 0.51 M | **71.7%** | 91.2% | 71.7% | Kaggle T4 |
+| GRU | sequence | ✓ | 60 | 0.89 M | 70.5% | 90.7% | 70.4% | Kaggle T4 |
 
-The same code run on Kaggle (T4) lands within 0.1 points: Conv1D 70.0% / GRU 68.5% top-1.
+- **Augmentation** (scale, rotation, shear, and dropping the lip or arm points) adds about 2 points.
+- **Sequence normalization** (center and scale per clip) adds 1 point without augmentation and is on par with global normalization when augmentation is on. It stays the default anyway. The val signers are all framed similarly, so this table can't show how much it matters. A live camera varies position and distance, and sequence normalization is what handles that.
+- Differences under about 0.5 points are within run-to-run noise: the same code run on MPS vs CUDA moves results by that much. Multi-seed runs are still to do.
+- Conv1D beats GRU in every setting, with 57% of the parameters. It is the export candidate.
+
 [Kaggle notebook](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-landmark-baselines) (currently private).
 
 ```bash
-python -m asl_realtime.train --model conv1d --epochs 30   # writes runs/conv1d/{model.pt,metrics.json}
+python -m asl_realtime.train --model conv1d --norm sequence --augment --epochs 60
 ```
 
 ## Roadmap
 
 - [x] Data loading and signer-disjoint splits
 - [x] Baseline models (GRU, 1D-CNN)
-- [ ] Position/scale-invariant normalization (relative to face / shoulders)
-- [ ] Augmentation (mirroring, rotation, time warping, landmark dropout)
+- [x] Position/scale-invariant normalization (per-clip centering and scaling, inside the model)
+- [x] Augmentation (affine, landmark-group dropout)
+- [ ] Temporal augmentation (time warping, frame dropout)
 - [ ] Temporal transformer
 - [ ] Quantization and Core ML / TFLite export
 - [ ] Real-time mobile demo app
