@@ -2,7 +2,7 @@
 
 Real-time American Sign Language recognition from hand and pose landmarks with a temporal transformer. The model runs on-device on a phone.
 
-> **Status:** Planning. No code yet.
+> **Status:** Early development. The data pipeline is in place; models come next.
 
 ## Goal
 
@@ -26,6 +26,25 @@ Camera ─► Landmark extraction (hands + pose + face) ─► Normalization
 - [Google – Isolated Sign Language Recognition](https://www.kaggle.com/competitions/asl-signs) (250 signs, landmark format)
 - [WLASL](https://dxli94.github.io/WLASL/) for cross-dataset generalization
 
+Development currently uses a preprocessed version of the competition data,
+[`markwijkhuizen/gislr-dataset-public`](https://www.kaggle.com/datasets/markwijkhuizen/gislr-dataset-public):
+
+| Split | Samples | Shape |
+|---|---|---|
+| train | 80,229 | 64 frames × 66 landmarks × (x, y, z) |
+| val | 14,248 | same, from **held-out participants** |
+
+The 66 landmarks per frame are 40 lip points, the 21 points of the dominant hand and 5 points of the dominant arm. Right-dominant signers are mirrored so every sample looks left-dominant. See [`landmarks.py`](src/asl_realtime/landmarks.py).
+
+```bash
+python -m venv .venv && .venv/bin/pip install -e ".[dev]"
+kaggle auth login
+for f in X_train.npy X_val.npy y_train.npy y_val.npy NON_EMPTY_FRAME_IDXS_TRAIN.npy NON_EMPTY_FRAME_IDXS_VAL.npy; do
+  kaggle datasets download markwijkhuizen/gislr-dataset-public -f "$f" -p data/gislr_public --unzip
+done
+pytest
+```
+
 ## Evaluation
 
 | Metric | Description |
@@ -37,7 +56,7 @@ Camera ─► Landmark extraction (hands + pose + face) ─► Normalization
 
 ## Roadmap
 
-- [ ] Data loading and signer-disjoint splits
+- [x] Data loading and signer-disjoint splits
 - [ ] Landmark normalization + augmentation
 - [ ] Baseline models (GRU, 1D-CNN)
 - [ ] Temporal transformer
