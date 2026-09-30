@@ -59,6 +59,16 @@ def test_load_split_rejects_length_mismatch(tmp_path):
         load_split(tmp_path, "train")
 
 
+def test_load_split_rejects_padded_frames_that_contain_data(tmp_path):
+    _write_split(tmp_path, "train", n=3)
+    idxs = np.load(tmp_path / "NON_EMPTY_FRAME_IDXS_TRAIN.npy")
+    idxs[:, -4:] = -1  # marked as padding, but X still has values there
+    np.save(tmp_path / "NON_EMPTY_FRAME_IDXS_TRAIN.npy", idxs)
+
+    with pytest.raises(ValueError, match="padding"):
+        load_split(tmp_path, "train")
+
+
 def test_load_split_rejects_out_of_range_labels(tmp_path):
     _write_split(tmp_path, "train", n=3, labels=[0, 1, NUM_CLASSES])
 

@@ -49,5 +49,13 @@ def load_split(root: str | Path, split: str) -> GislrSplit:
         )
     if len(y) and (y.min() < 0 or y.max() >= NUM_CLASSES):
         raise ValueError(f"{split} has label outside [0, {NUM_CLASSES}): {y.min()}..{y.max()}")
+    _check_padding(X, frame_idxs, split)
 
     return GislrSplit(X=X, y=y, frame_idxs=frame_idxs)
+
+
+def _check_padding(X: np.ndarray, frame_idxs: np.ndarray, split: str, sample: int = 1000) -> None:
+    """Padding frames (index -1) must hold no landmarks. Checks the first rows only, to stay cheap."""
+    padded = frame_idxs[:sample] == -1
+    if padded.any() and np.any(np.asarray(X[:sample])[padded] != 0):
+        raise ValueError(f"{split}: frames marked as padding contain landmark data")

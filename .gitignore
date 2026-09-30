@@ -220,3 +220,4 @@ __marimo__/
 # Datasets and training artifacts
 data/
 runs/
+kaggle/kernel/
