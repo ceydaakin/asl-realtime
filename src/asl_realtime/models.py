@@ -81,3 +81,20 @@ def build_model(name: str, n_features: int, **kwargs) -> nn.Module:
     if name not in MODELS:
         raise ValueError(f"Unknown model {name!r}, expected one of {sorted(MODELS)}")
     return MODELS[name](n_features=n_features, **kwargs)
+
+
+class LandmarkClassifier(nn.Module):
+    """Normalizer + sequence classifier: raw landmark x/y in, logits out. This is what gets exported."""
+
+    def __init__(self, name: str, normalizer: nn.Module, net: nn.Module):
+        super().__init__()
+        self.name = name
+        self.normalizer = normalizer
+        self.net = net
+
+    @property
+    def hparams(self) -> dict:
+        return {"model": self.name, "norm": self.normalizer.mode, **self.net.hparams}
+
+    def forward(self, xy: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        return self.net(self.normalizer(xy, mask), mask)

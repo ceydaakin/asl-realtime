@@ -36,9 +36,9 @@ def test_run_trains_and_writes_metrics_and_checkpoint(tmp_path):
 
     ckpt = torch.load(out / "model.pt", weights_only=False)
     assert ckpt["config"]["model"] == "gru"
-    assert {"mean", "std"} <= set(ckpt["stats"])
     assert "hidden" in ckpt["model_hparams"]
     assert ckpt["preprocessing"]["use_dims"] == 2
+    assert ckpt["model_hparams"]["norm"] == "sequence"
     assert len(ckpt["preprocessing"]["landmark_idxs_left_dominant"]) == 66
 
 
@@ -54,3 +54,44 @@ def test_run_respects_limit(tmp_path):
 
     assert metrics["n_train"] == 10
     assert metrics["n_val"] == 10
+
+
+def test_run_with_global_norm_and_augmentation(tmp_path):
+    data = tmp_path / "data"
+    data.mkdir()
+    _write_split(data, "train", 16)
+    _write_split(data, "val", 8)
+    config = TrainConfig(model="conv1d", data_root=str(data), out_dir=str(tmp_path / "run"),
+                         epochs=1, batch_size=8, device="cpu", norm="global", augment=True)
+
+    metrics = run(config)
+
+    ckpt = torch.load(tmp_path / "run" / "model.pt", weights_only=False)
+    assert ckpt["model_hparams"]["norm"] == "global"
+    assert "normalizer.mean" in ckpt["state_dict"]
+    assert {"mean", "std"} <= set(ckpt["stats"])
+    assert metrics["augment"] is True
+
+
+def test_load_model_restores_classifier_from_checkpoint(tmp_path):
+    from asl_realtime.train import load_model
+
+    data = tmp_path / "data"
+    data.mkdir()
+    _write_split(data, "train", 16)
+    _write_split(data, "val", 8)
+    out = tmp_path / "run"
+    run(TrainConfig(model="gru", data_root=str(data), out_dir=str(out), epochs=1, batch_size=8, device="cpu"))
+
+    model = load_model(out / "model.pt")
+    xy = torch.rand(2, INPUT_SIZE, N_COLS, 2)
+    mask = torch.ones(2, INPUT_SIZE, dtype=torch.bool)
+
+    assert model(xy, mask).shape == (2, 250)
+
+
+def test_run_rejects_unknown_norm(tmp_path):
+    import pytest
+
+    with pytest.raises(ValueError, match="norm"):
+        run(TrainConfig(norm="minmax", out_dir=str(tmp_path / "run")))

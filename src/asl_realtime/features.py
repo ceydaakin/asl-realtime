@@ -1,4 +1,4 @@
-"""Turning landmark arrays into model inputs.
+"""Training-set statistics and masks for landmark arrays.
 
 Missing landmarks and padded frames are stored as exact zeros. They must stay
 zero after normalization and must not leak into the statistics, otherwise a
@@ -60,17 +60,6 @@ def compute_stats(X: np.ndarray) -> FeatureStats:
     std[never_seen] = 1.0
     std[std < 1e-6] = 1.0
     return FeatureStats(mean=mean.astype(np.float32), std=std.astype(np.float32))
-
-
-def normalize(X: np.ndarray, stats: FeatureStats) -> np.ndarray:
-    """(N, INPUT_SIZE, N_COLS, N_DIMS) -> (N, INPUT_SIZE, N_FEATURES), missing points stay 0."""
-    _check_shape(X)
-    out = np.empty((len(X), INPUT_SIZE, N_FEATURES), np.float32)
-    for start in range(0, len(X), _CHUNK):
-        xy = np.asarray(X[start:start + _CHUNK, ..., :USE_DIMS], np.float32)
-        scaled = np.where(_present(xy), (xy - stats.mean) / stats.std, 0.0)
-        out[start:start + len(xy)] = scaled.reshape(len(xy), INPUT_SIZE, N_FEATURES)
-    return out
 
 
 def frame_mask(frame_idxs: np.ndarray) -> np.ndarray:

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from asl_realtime.features import FeatureStats, compute_stats, frame_mask, normalize
+from asl_realtime.features import FeatureStats, compute_stats, frame_mask
 from asl_realtime.landmarks import INPUT_SIZE, N_COLS, N_DIMS
 
 USE_DIMS = 2
@@ -43,30 +43,6 @@ def test_compute_stats_resets_only_the_degenerate_dim():
 
     assert stats.std[10, 1] == 1.0
     assert stats.std[10, 0] != 1.0
-
-
-def test_normalize_keeps_missing_points_at_zero_and_drops_z():
-    X = _batch()
-    stats = compute_stats(X)
-
-    out = normalize(X, stats)
-
-    assert out.shape == (len(X), INPUT_SIZE, N_COLS * USE_DIMS)
-    assert out.dtype == np.float32
-    reshaped = out.reshape(len(X), INPUT_SIZE, N_COLS, USE_DIMS)
-    assert np.all(reshaped[:, -8:] == 0)
-    assert np.all(reshaped[:, :, :5] == 0)
-
-
-def test_normalize_standardizes_present_points():
-    X = _batch(n=64)
-    stats = compute_stats(X)
-
-    out = normalize(X, stats).reshape(len(X), INPUT_SIZE, N_COLS, USE_DIMS)
-
-    present = out[:, :-8, 5:]
-    assert abs(present.mean()) < 0.05
-    assert abs(present.std() - 1) < 0.05
 
 
 def test_frame_mask_marks_padding():
