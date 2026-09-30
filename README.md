@@ -2,7 +2,7 @@
 
 Real-time American Sign Language recognition from hand and pose landmarks with a temporal transformer. The model runs on-device on a phone.
 
-> **Status:** Early development. The data pipeline is in place; models come next.
+> **Status:** Early development. The data pipeline and baselines are done (69.9% top-1 on unseen signers). A stronger model and the mobile export come next.
 
 ## Goal
 
@@ -54,11 +54,28 @@ pytest
 | Latency | ms per prediction on iPhone / Android |
 | Model size | MB after quantization |
 
+## Results
+
+Validation on **held-out participants**. There are 250 classes, so chance is 0.4%. 30 epochs, x/y landmarks only, no augmentation.
+
+| Model | Params | Top-1 | Top-5 | Top-1 (last epoch) | s / epoch (M4 Pro MPS) |
+|---|---|---|---|---|---|
+| Conv1D (6 depthwise-separable blocks) | 0.51 M | **69.9%** | 90.4% | 69.8% | 20 |
+| GRU (2 layers, unidirectional) | 0.89 M | 68.4% | 90.3% | 68.4% | 24 |
+
+The same code run on Kaggle (T4) lands within 0.1 points: Conv1D 70.0% / GRU 68.5% top-1.
+[Kaggle notebook](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-landmark-baselines) (currently private).
+
+```bash
+python -m asl_realtime.train --model conv1d --epochs 30   # writes runs/conv1d/{model.pt,metrics.json}
+```
+
 ## Roadmap
 
 - [x] Data loading and signer-disjoint splits
-- [ ] Landmark normalization + augmentation
-- [ ] Baseline models (GRU, 1D-CNN)
+- [x] Baseline models (GRU, 1D-CNN)
+- [ ] Position/scale-invariant normalization (relative to face / shoulders)
+- [ ] Augmentation (mirroring, rotation, time warping, landmark dropout)
 - [ ] Temporal transformer
 - [ ] Quantization and Core ML / TFLite export
 - [ ] Real-time mobile demo app
