@@ -75,7 +75,7 @@ Validation on **held-out participants**. There are 250 classes, so chance is 0.4
 - Conv1D beats GRU in every setting, with 57% of the parameters.
 - **Temporal augmentation** ("+ time": random signing speed and dropped frames) adds about 1 point to Conv1D.
 - The **transformer** (4 layers, 192 wide) adds 2 more points for 2.5× the parameters. It is the exported model.
-- All numbers are single-seed runs.
+- Three transformer seeds give 74.6 ± 0.2% top-1 (74.7, 74.6, 74.4) and 92.2 ± 0.1% top-5. The other rows are single-seed runs.
 
 ### Cross-dataset (WLASL)
 
@@ -88,7 +88,7 @@ The same checkpoints on WLASL videos of the 200 signs both datasets share, with 
 | Conv1D | sequence | ✓ | 51.9% | 75.2% |
 | Conv1D | global | ✓ | 47.9% | 70.6% |
 
-Sequence normalization is worth 4 points here, which the GISLR validation split could not show. The 20-point drop from GISLR comes from different signers, studio framing, sign variants that differ between the datasets, and two-handed signs.
+The other two transformer seeds score 54.3% and 54.0%, so about 54.5% on average. Sequence normalization is worth 4 points here, which the GISLR validation split could not show. The 20-point drop from GISLR comes from different signers, studio framing, sign variants that differ between the datasets, and two-handed signs.
 
 ```bash
 python -m asl_realtime.wlasl build --index WLASL_v0.3.json --out data/wlasl
@@ -156,7 +156,7 @@ Raise your hand, sign, lower it: the sign is classified when the hand leaves the
 - [ ] Try the browser demo on a phone with a live camera
 - [ ] Native mobile app (Core ML on iOS, TFLite on Android)
 - [ ] On-device benchmark on iPhone / Android
-- [ ] Multi-seed runs
+- [ ] Multi-seed runs for the baselines (done for the transformer)
 
 ## Project structure
 
