@@ -4,6 +4,10 @@ Points that were not detected (exact 0) and padded frames stay 0. The dominant
 hand is never dropped: it carries most of the sign. Lips and arm points go
 missing in real footage (face turned away, arm out of frame), so the model
 should learn to cope without them.
+
+Temporal augmentation changes the signing speed and drops frames, the way a
+slower phone or a missed hand detection would. Real frames stay packed at the
+start of the sequence, so it returns a new mask as well.
 """
 
 import math
@@ -23,6 +27,8 @@ class AugConfig:
     drop_lips_p: float = 0.1
     drop_pose_p: float = 0.1
     drop_point_p: float = 0.05                  # per landmark, for the whole sequence
+    time_scale: tuple[float, float] = (0.75, 1.25)  # >1 = slower signing, more frames
+    drop_frame_p: float = 0.1
 
 
 def _uniform(lo: float, hi: float, n: int, g: torch.Generator | None) -> torch.Tensor:
@@ -59,3 +65,22 @@ def augment(xy: torch.Tensor, mask: torch.Tensor, cfg: AugConfig,
     keep = _keep_mask(n, cfg, generator).to(xy.device)[:, None, :, None]
     moved = torch.einsum("btcd,bed->btce", xy - 0.5, m) + 0.5
     return torch.where(present & keep, moved, torch.zeros_like(xy))
+
+
+def augment_time(xy: torch.Tensor, mask: torch.Tensor, cfg: AugConfig,
+                 generator: torch.Generator | None = None) -> tuple[torch.Tensor, torch.Tensor]:
+    """Resample each sequence to a random speed, then drop random frames. Returns new (xy, mask)."""
+    n, t = mask.shape
+    pos = torch.arange(t)
+    length = mask.sum(dim=1).cpu()
+    new_len = (length * _uniform(*cfg.time_scale, n, generator)).round().clamp(min=1, max=t)
+    new_len = torch.where(length > 0, new_len, torch.zeros_like(new_len))
+    # Nearest source frame, not interpolation: blending a detected point with a missing one (0) is meaningless.
+    src = ((pos + 0.5) * (length / new_len.clamp(min=1))[:, None]).long().clamp(max=t - 1)
+    keep = (torch.rand(n, t, generator=generator) >= cfg.drop_frame_p) & (pos < new_len[:, None])
+    keep[:, 0] = length > 0
+    order = (~keep).long().argsort(dim=1, stable=True)  # kept frames first, original order
+    idx = src.gather(1, order).to(xy.device)
+    new_mask = (pos < keep.sum(dim=1, keepdim=True)).to(mask.device)
+    moved = xy.gather(1, idx[:, :, None, None].expand_as(xy))
+    return torch.where(new_mask[:, :, None, None], moved, torch.zeros_like(xy)), new_mask

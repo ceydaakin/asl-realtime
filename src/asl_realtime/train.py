@@ -14,7 +14,7 @@ import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
-from .augment import AugConfig, augment
+from .augment import AugConfig, augment, augment_time
 from .data import GislrSplit, load_split
 from .features import N_FEATURES, USE_DIMS, FeatureStats, compute_stats, frame_mask
 from .landmarks import INPUT_SIZE, LANDMARK_IDXS_LEFT_DOMINANT, LANDMARK_IDXS_RIGHT_DOMINANT
@@ -98,6 +98,7 @@ def _train_epoch(model, loader, opt, sched, device, config: TrainConfig) -> floa
     for xy, mask, y in loader:
         xy, mask, y = xy.to(device), mask.to(device), y.to(device)
         if config.augment:
+            xy, mask = augment_time(xy, mask, config.aug)
             xy = augment(xy, mask, config.aug)
         loss = F.cross_entropy(model(xy, mask), y, label_smoothing=config.label_smoothing)
         opt.zero_grad(set_to_none=True)
