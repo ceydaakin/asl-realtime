@@ -11,6 +11,8 @@ dependencies = ["numpy>=1.26", "torch>=2.4"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5"]
+# litert-torch needs torch<2.14, so exporting may need its own venv.
+export = ["coremltools>=9", "litert-torch>=0.9"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
