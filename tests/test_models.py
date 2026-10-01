@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from asl_realtime.landmarks import INPUT_SIZE, NUM_CLASSES
-from asl_realtime.models import MODELS, build_model
+from asl_realtime.models import MODELS, build_model, sinusoidal_positions
 
 N_FEATURES = 132
 
@@ -85,3 +85,29 @@ def test_model_trains_one_step(name):
 def test_build_model_rejects_unknown_name():
     with pytest.raises(ValueError, match="Unknown model"):
         build_model("resnet", n_features=N_FEATURES)
+
+
+def test_transformer_rejects_hidden_not_divisible_by_heads():
+    with pytest.raises(ValueError, match="heads"):
+        build_model("transformer", n_features=N_FEATURES, hidden=130, heads=4)
+
+
+def test_transformer_is_sensitive_to_frame_order():
+    model = build_model("transformer", n_features=N_FEATURES).eval()
+    x, mask = _inputs()
+    real = int(mask[0].sum())
+    x_reversed = x.clone()
+    x_reversed[:, :real] = x[:, :real].flip(1)
+
+    with torch.no_grad():
+        a, b = model(x, mask), model(x_reversed, mask)
+
+    assert not torch.allclose(a, b, atol=1e-4)
+
+
+def test_sinusoidal_positions_are_distinct_and_length_independent():
+    short, long = sinusoidal_positions(8, 16), sinusoidal_positions(100, 16)
+
+    assert long.shape == (100, 16)
+    torch.testing.assert_close(short, long[:8])
+    assert torch.unique(long, dim=0).shape[0] == 100
