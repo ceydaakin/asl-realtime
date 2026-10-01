@@ -196,10 +196,11 @@ def main() -> None:
     p.add_argument("--lr", type=float, default=TrainConfig.lr)
     p.add_argument("--device", default=TrainConfig.device)
     p.add_argument("--limit", type=int)
+    p.add_argument("--seed", type=int, default=TrainConfig.seed)
     a = p.parse_args()
     config = TrainConfig(model=a.model, norm=a.norm, augment=a.augment, data_root=a.data_root,
                          out_dir=a.out_dir or f"runs/{a.model}", epochs=a.epochs,
-                         batch_size=a.batch_size, lr=a.lr, device=a.device, limit=a.limit)
+                         batch_size=a.batch_size, lr=a.lr, device=a.device, limit=a.limit, seed=a.seed)
     m = run(config)
     print(f"best val top1={m['val_top1']:.4f} top5={m['val_top5']:.4f} (epoch {m['best_epoch']}), "
           f"last top1={m['last_val_top1']:.4f} top5={m['last_val_top5']:.4f}")
