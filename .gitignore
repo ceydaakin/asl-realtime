@@ -221,4 +221,5 @@ __marimo__/
 data/
 runs/
 exports/
+app/web/model/
 kaggle/kernel/

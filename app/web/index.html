@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASL Realtime</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; padding: 16px; background: #111; color: #eee; max-width: 640px; margin-inline: auto; }
+    video { width: 100%; border-radius: 12px; background: #000; }
+    video.mirrored { transform: scaleX(-1); }
+    #sign { font-size: 2.2rem; font-weight: 700; min-height: 2.8rem; margin: 12px 0 4px; }
+    #others, #status, #timing { color: #aaa; min-height: 1.3rem; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+    button, label.button { background: #2b6; color: #000; border: 0; border-radius: 8px; padding: 10px 14px;
+                           font-size: 1rem; font-weight: 600; cursor: pointer; }
+    button:disabled { background: #444; color: #888; }
+    input[type=file] { display: none; }
+  </style>
+</head>
+<body>
+  <video id="video" playsinline muted></video>
+  <div id="sign"></div>
+  <div id="others"></div>
+  <div class="row">
+    <button id="camera" disabled>Start camera</button>
+    <label class="button">Video file<input id="file" type="file" accept="video/*" disabled></label>
+    <button id="benchmark" disabled>Benchmark</button>
+  </div>
+  <div id="status">Loading models…</div>
+  <div id="timing"></div>
+  <p style="color:#777">Raise your hand, sign, lower it. Everything runs in this browser; no video is uploaded.</p>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
