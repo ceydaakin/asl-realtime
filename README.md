@@ -113,11 +113,32 @@ pip install -e ".[export]"   # needs torch<2.14, see pyproject.toml
 python -m asl_realtime.export --checkpoint runs/transformer/model.pt --out exports/transformer
 ```
 
-[Kaggle notebook](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-landmark-baselines) (currently private).
+The same training runs on Kaggle: see [On Kaggle](#on-kaggle).
 
 ```bash
 python -m asl_realtime.train --model transformer --norm sequence --augment --epochs 60
 ```
+
+## On Kaggle
+
+Everything below is generated from this repo by the builders in [`kaggle/`](kaggle).
+
+| What | Link | Builder |
+|---|---|---|
+| Training notebook (GRU, Conv1D, transformer on a T4) | [asl-realtime-landmark-baselines](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-landmark-baselines) | `build_notebook.py` |
+| Error analysis: which signs are hard, and what they get mistaken for | [asl-realtime-which-signs-are-hard](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-which-signs-are-hard) | `build_eval_notebook.py` |
+| The package as one importable script | [asl-realtime-lib](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-lib) | `build_script.py` |
+| Model: PyTorch, TFLite and Core ML variations | [asl-realtime-transformer](https://www.kaggle.com/models/ceydaakin2004/asl-realtime-transformer) | `build_model.py` |
+| Dataset: training curves and export checks as CSV | [asl-realtime-experiment-results](https://www.kaggle.com/datasets/ceydaakin2004/asl-realtime-experiment-results) | `build_dataset.py` |
+| R notebook and R Markdown report on the dataset | [training curves](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-training-curves-in-r), [export size vs accuracy](https://www.kaggle.com/code/ceydaakin2004/asl-realtime-export-size-vs-accuracy) | `build_r_notebooks.py` |
+
+The error-analysis notebook loads the script, the model and the dataset from Kaggle and reproduces 74.7% top-1 on the held-out signers.
+
+```bash
+python kaggle/build_model.py --owner <kaggle-username> --public   # each builder prints its output folder
+```
+
+Each builder's docstring lists the `kaggle` commands that publish its output.
 
 ## Demo
 
@@ -165,10 +186,11 @@ src/asl_realtime/
   data.py, features.py, landmarks.py, labels.py   # dataset, landmark layout, sign names
   normalize.py, augment.py, models.py, train.py   # training
   export.py                                       # Core ML / TFLite conversion and parity check
+  errors.py                                       # per-sign accuracy and most frequent confusions
   live.py, demo.py                                # camera frames -> model input, webcam demo
   wlasl.py                                        # cross-dataset evaluation
 app/web/                                          # browser demo
-kaggle/                                           # notebook builder
+kaggle/                                           # builders for the Kaggle notebooks, model and dataset
 ```
 
 ## License
