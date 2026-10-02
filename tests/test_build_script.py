@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -23,8 +24,16 @@ def test_script_is_one_importable_module(tmp_path):
     build(tmp_path, owner="someone")
     src = (tmp_path / f"{SCRIPT_SLUG}.py").read_text()
 
-    assert "from ." not in src and "__main__" not in src
+    assert "from ." not in src
     ns: dict = {}
     exec(compile(src, "asl_realtime_lib", "exec"), ns)
     assert callable(ns["run"]) and callable(ns["load_model"])
     assert ns["TrainConfig"]().model == "gru"
+
+
+def test_running_the_script_saves_an_importable_copy(tmp_path):
+    build(tmp_path, owner="someone")
+
+    subprocess.run([sys.executable, tmp_path / f"{SCRIPT_SLUG}.py"], cwd=tmp_path, check=True)
+
+    assert (tmp_path / "asl_realtime_lib.py").read_text() == (tmp_path / f"{SCRIPT_SLUG}.py").read_text()

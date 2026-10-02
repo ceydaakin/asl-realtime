@@ -1,6 +1,8 @@
 """Generate the Kaggle utility script: the whole asl_realtime package in one importable file.
 
-Other notebooks add it under kernel_sources and `import asl_realtime_lib`.
+Other notebooks add it under kernel_sources. A script pushed through the API is not importable by
+name (that needs "Set as utility script" in the Kaggle editor), so when it runs it also saves
+itself as an output file, which a notebook can put on sys.path.
 
     python kaggle/build_script.py --owner <kaggle-username> [--public]
     kaggle kernels push -p kaggle/script
@@ -16,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_SLUG = "asl-realtime-lib"
 TITLE = "ASL Realtime Lib"
 KEYWORDS = ["classification", "transformers"]
+MODULE = SCRIPT_SLUG.replace("-", "_")
 
 HEADER = '''"""asl_realtime as a single module: landmark layout, normalization, augmentation, models, training.
 
@@ -27,8 +30,17 @@ utility script, then:
 '''
 
 
+FOOTER = f'''
+if __name__ == "__main__":  # the Kaggle run: publish this file as an output other notebooks can import
+    import shutil
+    import sys
+
+    shutil.copy(globals().get("__file__", sys.argv[0]), "{MODULE}.py")
+'''
+
+
 def source() -> str:
-    return HEADER + "\n" + "\n\n".join(module_source(m) for m in MODULE_ORDER)
+    return HEADER + "\n" + "\n\n".join(module_source(m) for m in MODULE_ORDER) + FOOTER
 
 
 def build(out_dir: Path, owner: str, public: bool = False) -> Path:
