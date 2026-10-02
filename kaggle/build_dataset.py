@@ -3,8 +3,10 @@
     python kaggle/build_dataset.py --owner <kaggle-username> [--public]
     kaggle datasets create -p kaggle/dataset
     kaggle datasets metadata --update -p kaggle/dataset <owner>/asl-realtime-experiment-results
+    kaggle datasets version -p kaggle/dataset -m "<what changed>"
 
-The second command sets what `create` ignores: column descriptions, sources and the cover image.
+`metadata --update` sets the sources and the cover image, which `create` ignores. File and column
+descriptions only took effect after a `version`.
 """
 
 import argparse
