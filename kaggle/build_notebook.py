@@ -3,7 +3,7 @@
 The notebook inlines src/asl_realtime so Kaggle runs exactly the code in this
 repo, without needing internet access or a pip install.
 
-    python kaggle/build_notebook.py --owner <kaggle-username>
+    python kaggle/build_notebook.py --owner <kaggle-username> [--public]
     kaggle kernels push -p kaggle/kernel
 """
 
@@ -18,10 +18,11 @@ MODULE_ORDER = ["landmarks", "data", "features", "normalize", "augment", "models
 DATASET = "markwijkhuizen/gislr-dataset-public"
 KERNEL_SLUG = "asl-realtime-landmark-baselines"
 TITLE = "ASL Realtime - Landmark Baselines"
+KEYWORDS = ["classification", "transformers", "gpu"]
 
 INTRO = f"""# {TITLE}
 
-Baseline models for isolated American Sign Language recognition from MediaPipe landmarks
+GRU, Conv1D and temporal transformer models for isolated American Sign Language recognition from MediaPipe landmarks
 (250 signs, Google ISLR data). The validation split uses **held-out participants**, so the
 accuracy below measures how well the model handles signers it has never seen.
 
@@ -37,6 +38,7 @@ RUN = """# name -> TrainConfig overrides
 EXPERIMENTS = {
     "conv1d_seq_aug": dict(model="conv1d", norm="sequence", augment=True, epochs=60),
     "gru_seq_aug": dict(model="gru", norm="sequence", augment=True, epochs=60),
+    "transformer_seq_aug": dict(model="transformer", norm="sequence", augment=True, epochs=60),
 }
 
 results = {}
@@ -81,16 +83,16 @@ def notebook() -> dict:
                          "language_info": {"name": "python"}}}
 
 
-def build(out_dir: Path, owner: str) -> Path:
+def build(out_dir: Path, owner: str, public: bool = False) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     code_file = f"{KERNEL_SLUG}.ipynb"
     (out_dir / code_file).write_text(json.dumps(notebook(), indent=1))
     meta = {
         "id": f"{owner}/{KERNEL_SLUG}", "title": TITLE, "code_file": code_file,
-        "language": "python", "kernel_type": "notebook", "is_private": "true",
+        "language": "python", "kernel_type": "notebook", "is_private": str(not public).lower(),
         "enable_gpu": "true", "enable_internet": "false",
         "dataset_sources": [DATASET], "competition_sources": [],
-        "kernel_sources": [], "model_sources": [],
+        "kernel_sources": [], "model_sources": [], "keywords": KEYWORDS,
     }
     (out_dir / "kernel-metadata.json").write_text(json.dumps(meta, indent=2))
     return out_dir
@@ -100,8 +102,9 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--owner", required=True, help="Kaggle username")
     p.add_argument("--out", type=Path, default=ROOT / "kaggle" / "kernel")
+    p.add_argument("--public", action="store_true", help="publish the notebook publicly")
     a = p.parse_args()
-    print(f"Wrote {build(a.out, a.owner)}")
+    print(f"Wrote {build(a.out, a.owner, a.public)}")
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "kaggle"))
 
-from build_notebook import DATASET, KERNEL_SLUG, build  # noqa: E402
+from build_notebook import DATASET, KERNEL_SLUG, KEYWORDS, build  # noqa: E402
 
 
 def _cells(nb, kind):
@@ -19,9 +19,24 @@ def test_build_writes_notebook_and_metadata(tmp_path):
     assert meta["id"] == f"someone/{KERNEL_SLUG}"
     assert meta["dataset_sources"] == [DATASET]
     assert meta["is_private"] == "true"
+    assert meta["keywords"] == KEYWORDS
     assert meta["enable_gpu"] == "true"
     nb = json.loads((tmp_path / meta["code_file"]).read_text())
     assert nb["nbformat"] == 4
+
+
+def test_public_build_is_not_private(tmp_path):
+    build(tmp_path, owner="someone", public=True)
+
+    meta = json.loads((tmp_path / "kernel-metadata.json").read_text())
+    assert meta["is_private"] == "false"
+
+
+def test_notebook_trains_the_transformer(tmp_path):
+    build(tmp_path, owner="someone")
+    nb = json.loads((tmp_path / f"{KERNEL_SLUG}.ipynb").read_text())
+
+    assert any('model="transformer"' in src for src in _cells(nb, "code"))
 
 
 def test_code_cells_compile_and_have_no_relative_imports(tmp_path):
