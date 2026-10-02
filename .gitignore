@@ -225,3 +225,5 @@ app/web/model/
 kaggle/kernel/
 kaggle/model/
 kaggle/dataset/
+kaggle/script/
+kaggle/eval/
